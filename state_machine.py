@@ -13,6 +13,11 @@ ACTION_GESTURES = {
     "point_right": "next",
 }
 
+CONTINUOUS_GESTURES = {
+    "point_up": "volume_up",
+    "point_down": "volume_down",
+}
+
 
 class StateMachine:
     
@@ -61,6 +66,19 @@ class StateMachine:
         # if max time to wait is reached we disarm isra.. the system.. sadly just the system...
         if now - self._armed_at > config.ARM_TIMEOUT:
             self._enter_idle()
+            return None
+
+        if gesture in CONTINUOUS_GESTURES:
+            if gesture == self._confirm_gesture:
+                self._confirm_count += 1
+            else:
+                self._confirm_gesture = gesture
+                self._confirm_count = 1
+
+            self._armed_at = now
+
+            if self._confirm_count >= config.ACTION_CONFIRM_FRAMES:
+                return CONTINUOUS_GESTURES[gesture]
             return None
 
         if gesture in ACTION_GESTURES:

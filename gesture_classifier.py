@@ -27,6 +27,22 @@ def _is_extended(landmarks, finger_name):
 
     return _dist(wrist, tip) > _dist(wrist, pip)
 
+def _is_thumb_extended(landmarks):
+
+    wrist = landmarks[WRIST]
+    thumb_tip = landmarks[4]
+    index_mcp = landmarks[5]
+    pinky_mcp = landmarks[17]
+
+    palm_width = _dist(index_mcp, pinky_mcp)
+    if palm_width < 1e-6:
+        return False
+
+    thumb_spread = _dist(thumb_tip, index_mcp)
+    ratio = thumb_spread / palm_width
+
+    return ratio > config.THUMB_EXTENDED_RATIO
+
 
 def classify(landmarks):
     """ Classify the current gesture using the different points and the finger map"""
@@ -34,7 +50,8 @@ def classify(landmarks):
     if landmarks is None:
         return "none"
 
-    extended = {name: _is_extended(landmarks, name) for name in FINGERS}
+    extended = {name: _is_extended(landmarks, name) for name in FINGERS if name != "thumb"}
+    extended["thumb"] = _is_thumb_extended(landmarks)
 
     # We don't use the thumb because for a next update it will be annoying me ngl
     non_thumb = [extended[name] for name in ("index", "fuck", "near_fuck", "little")]
@@ -43,13 +60,17 @@ def classify(landmarks):
     if nb_non_thumb_extended == 4:
         return "palm_open"
 
-    if nb_non_thumb_extended == 0:
-        return "fist"
-
-    # Ugly way to check if index is pointing in a direction (for now)
-    others_folded = not extended["fuck"] and not extended["near_fuck"] and not extended["little"]
-    if extended["index"] and others_folded:
+    others_folded = (
+        not extended["index"]
+        and not extended["fuck"]
+        and not extended["near_fuck"]
+        and not extended["little"]
+    )
+    if extended["thumb"] and others_folded:
         return _point_direction(landmarks)
+
+    if nb_non_thumb_extended == 0 and not extended["thumb"]:
+        return "fist"
 
     return "none"
 
@@ -57,18 +78,22 @@ def classify(landmarks):
 def _point_direction(landmarks):
     """ Check the direction the finger is pointing at"""
 
-    wrist = landmarks[WRIST]
-    index_tip = landmarks[FINGERS["index"]["tip"]]
+    index_mcp = landmarks[5]
+    thumb_tip = landmarks[FINGERS["thumb"]["tip"]]
 
-    dx = index_tip[0] - wrist[0]
-    dy = index_tip[1] - wrist[1]
+    dx = thumb_tip[0] - index_mcp[0]
+    dy = thumb_tip[1] - index_mcp[1]
 
-    # for now up and down are not mapped so just don't care
-    if abs(dx) < config.POINT_HORIZONTAL_THRESHOLD * max(abs(dy), 0.01) and abs(dx) < config.POINT_HORIZONTAL_THRESHOLD:
-        return "none"
+    if abs(dx) > abs(dy) * config.DIRECTION_BIAS:
 
-    # Taking in account camera mirroring real life cause it stinks, dx > 0 = right but then mirrored it is really just left
-    if dx > 0:
-        return "point_left"
+        if abs(dx) < config.POINT_HORIZONTAL_THRESHOLD:
+            return "none"
+        
+        return "point_left" if dx > 0 else "point_right"
+
     else:
-        return "point_right"
+
+        if abs(dy) < config.POINT_VERTICAL_THRESHOLD:
+            return "none"
+
+        return "point_down" if dy > 0 else "point_up"

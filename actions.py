@@ -6,6 +6,8 @@ _KEY_MAP = {
     "play_pause": Key.media_play_pause, # Start / pause the current media
     "next": Key.media_next, # yeet that sh*t and go to next media
     "previous": Key.media_previous, # go back to the start / to the previous media
+    "volume_up": Key.media_volume_up, # Volume go vroooommm
+    "volume_down": Key.media_volume_down, # Volume go shuuuuu
 }
 
 
