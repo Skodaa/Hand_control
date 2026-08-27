@@ -13,6 +13,8 @@ from gesture_classifier import classify
 from state_machine import StateMachine
 import actions
 
+from status_indicator import StatusIndicator
+
 
 def run(debug=False):
 
@@ -27,6 +29,7 @@ def run(debug=False):
     with Camera() as cam, HandTracker() as tracker:
 
         sm = StateMachine()
+        indicator = StatusIndicator()
         print("Program started")
 
         try:
@@ -44,6 +47,7 @@ def run(debug=False):
                     landmarks = tracker.process(frame)
                     gesture = classify(landmarks)
                     action = sm.update(gesture)
+                    indicator.set_state(sm.state)
 
                     if action:
                         actions.execute(action)
@@ -51,9 +55,12 @@ def run(debug=False):
 
                     if debug_view:
                         debug_view.show(frame, landmarks, gesture, sm.state)
+
                 elif debug_view:
                     debug_view.show(frame, None, None, sm.state)
 
+                indicator.refresh()
+                
                 if debug_view and debug_view.should_quit():
                     break
 
@@ -65,6 +72,7 @@ def run(debug=False):
         except KeyboardInterrupt:
             print("\nA Killing program")
         finally:
+            indicator.close()
             if debug_view:
                 debug_view.cleanup()
 

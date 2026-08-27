@@ -13,7 +13,7 @@ MIN_DETECTION_CONFIDENCE = 0.6
 MIN_TRACKING_CONFIDENCE = 0.5
 
 # --- states gestion ---
-ARM_HOLD_TIME = 0.2 # seconds where the hand is open to activate the action
+ARM_HOLD_TIME = 0.15 # seconds where the hand is open to activate the action
 ARM_TIMEOUT = 2.0 # number of seconds after system finds the open hand to make a move 
 ACTION_CONFIRM_FRAMES = 3 # number of consecutive frame where the action should be the same 
 COOLDOWN_TIME = 1.2 # seconds after the exsecution of the action to ensure it is not played multiple times 
